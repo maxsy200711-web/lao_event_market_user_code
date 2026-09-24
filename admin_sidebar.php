@@ -18,6 +18,9 @@ $active = $active ?? '';
     <a href="admin_users.php" class="side-item <?= $active === 'users' ? 'active' : '' ?>">
         <i class="ti ti-users"></i> ຈັດການຜູ້ໃຊ້
     </a>
+    <a href="admin_organizer_requests.php" class="side-item <?= $active === 'organizer_requests' ? 'active' : '' ?>">
+        <i class="ti ti-user-check"></i> Organizer Requests
+    </a>
     <a href="admin_reviews.php" class="side-item <?= $active === 'reviews' ? 'active' : '' ?>">
         <i class="ti ti-message-2"></i> ຈັດການລິວິວ
     </a>

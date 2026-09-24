@@ -22,8 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_msg = 'ລະຫັດຜ່ານໃໝ່ຕ້ອງມີຢ່າງໜ້ອຍ 6 ຕົວອັກສອນ';
             } else {
                 $hashed_pwd = password_hash($new_password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("UPDATE organizers SET organizer_name = ?, company_name = ?, phone = ?, password = ? WHERE organizer_id = ?");
-                $stmt->execute([$organizer_name, $company_name, $phone, $hashed_pwd, $organizer_id]);
+                $stmt = $pdo->prepare("UPDATE organizers SET organizer_name = ?, company_name = ?, phone = ? WHERE organizer_id = ?");
+                $stmt->execute([$organizer_name, $company_name, $phone, $organizer_id]);
+                if (!empty($_SESSION['user_id'])) {
+                    $user_stmt = $pdo->prepare("UPDATE users SET password = ? WHERE user_id = ?");
+                    $user_stmt->execute([$hashed_pwd, (int)$_SESSION['user_id']]);
+                }
                 $success_msg = 'ບັນທຶກຂໍ້ມູນ ແລະ ປ່ຽນລະຫັດຜ່ານສຳເລັດ';
             }
         } else {
@@ -41,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 2. ດຶງຂໍ້ມູນ Organizer ປັດຈຸບັນ
-$stmt = $pdo->prepare("SELECT * FROM organizers WHERE organizer_id = ?");
+$stmt = $pdo->prepare("SELECT o.*, u.email FROM organizers o LEFT JOIN organizer_users ou ON ou.organizer_id = o.organizer_id LEFT JOIN users u ON u.user_id = ou.user_id WHERE o.organizer_id = ? LIMIT 1");
 $stmt->execute([$organizer_id]);
 $org = $stmt->fetch();
 

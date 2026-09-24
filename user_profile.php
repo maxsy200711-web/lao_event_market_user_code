@@ -279,6 +279,12 @@ if (!$user) {
                 <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy"></i> ບັນທຶກການປ່ຽນແປງ</button>
             </div>
         </form>
+
+        <p style="margin-top:20px;text-align:center">
+            <a href="become_organizer.php" style="color:#10B981;font-weight:600;text-decoration:none">
+                Become an Organizer
+            </a>
+        </p>
     </div>
 </div>
 

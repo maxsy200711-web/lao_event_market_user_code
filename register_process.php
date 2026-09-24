@@ -74,8 +74,8 @@ if ($role === 'organizer') {
     // -------------------------------------------------------------
     //  ຈັດການການລົງທະບຽນສໍາລັບ ຜູ້ໃຊ້ທົ່ວໄປ (General User)
     // -------------------------------------------------------------
-    $stmt = $pdo->prepare("INSERT INTO users (full_name, email, password, phone) VALUES (?, ?, ?, ?)");
-    $inserted = $stmt->execute([$fullname, $email, $hashed_password, $phone]);
+    $stmt = $pdo->prepare("INSERT INTO users (username, full_name, email, password, phone) VALUES (?, ?, ?, ?, ?)");
+    $inserted = $stmt->execute([$fullname, $fullname, $email, $hashed_password, $phone]);
 
     if ($inserted) {
         $user_id = $pdo->lastInsertId();

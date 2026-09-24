@@ -57,6 +57,14 @@ if ($user_email) {
 .btn-logout:hover {
     color: #DC2626;
 }
+.btn-profile {
+    color: #059669;
+    text-decoration: none;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    margin-left: 4px;
+}
 </style>
 
 <?php if ($user_email): ?>
@@ -68,7 +76,12 @@ if ($user_email) {
         <span class="user-email-text" title="<?= htmlspecialchars($user_email) ?>">
             <?= htmlspecialchars($display_name) ?>
         </span>
-        <a href="logout.php" class="btn-logout" title="ອອກຈາກລະບົບ">
+        <?php if ($user_role === 'user'): ?>
+            <a href="user_profile.php" class="btn-profile" title="Profile">
+                <i class="ti ti-user-cog"></i>
+            </a>
+        <?php endif; ?>
+        <a href="logout.php" class="btn-logout" title="Logout">
             <i class="ti ti-logout"></i>
         </a>
     </div>

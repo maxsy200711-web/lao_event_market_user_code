@@ -17,7 +17,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle_verify') {
 $tab = ($_GET['tab'] ?? 'users') === 'organizers' ? 'organizers' : 'users';
 
 if ($tab === 'users') {
-    $rows = $pdo->query("SELECT user_id AS id, full_name AS name, email, phone, create_at
+    $rows = $pdo->query("SELECT user_id AS id, username, full_name AS name, email, phone, create_at
                          FROM users ORDER BY user_id DESC")->fetchAll();
 } else {
     // ດຶງຂໍ້ມູນ is_verified ເພີ່ມ
@@ -57,18 +57,21 @@ if ($tab === 'users') {
         </div>
 
         <div class="panel">
+            <?php if ($tab === 'users'): ?><p style="margin-bottom:14px"><a href="admin_user_form.php" class="btn btn-primary">+ Add User</a></p><?php endif; ?>
             <?php if (empty($rows)): ?>
                 <div class="empty-state"><i class="ti ti-users"></i>ຍັງບໍ່ມີຂໍ້ມູນ</div>
             <?php elseif ($tab === 'users'): ?>
             <table class="data-table">
-                <tr><th>ຊື່</th><th>ອີເມວ</th><th>ເບີໂທ</th><th>ວັນທີສະໝັກ</th><th></th></tr>
+                <tr><th>Username</th><th>Full name</th><th>Email</th><th>Phone</th><th>Created</th><th>Action</th></tr>
                 <?php foreach ($rows as $r): ?>
                 <tr>
+                    <td><?= htmlspecialchars($r['username']) ?></td>
                     <td><?= htmlspecialchars($r['name']) ?></td>
                     <td><?= htmlspecialchars($r['email']) ?></td>
                     <td><?= htmlspecialchars($r['phone'] ?: '-') ?></td>
                     <td><?= htmlspecialchars(date('d/m/Y', strtotime($r['create_at']))) ?></td>
                     <td>
+                        <a href="admin_user_form.php?id=<?= $r['id'] ?>" class="btn btn-primary">Edit</a>
                         <a href="admin_user_delete.php?type=user&id=<?= $r['id'] ?>" class="btn btn-danger"
                            onclick="return confirm('ຢືນຢັນການລຶບບັນຊີນີ້ບໍ?')">ລຶບ</a>
                     </td>
