@@ -19,14 +19,17 @@ if ($role === 'organizer' && ($organizerName === '' || $companyName === '')) {
     header('Location: register.php?error=invalid&role=organizer'); exit;
 }
 
-$stmt = $pdo->prepare('SELECT 1 FROM users WHERE (username = ? OR email = ? OR phone = ?) LIMIT 1');
-$stmt->execute([$username, $email, $phone]);
-if ($stmt->fetchColumn()) { header('Location: register.php?error=exists&role=' . urlencode($role)); exit; }
-
 if ($role === 'organizer') {
-    $stmt = $pdo->prepare('SELECT 1 FROM organizers WHERE email = ? OR phone = ? LIMIT 1');
-    $stmt->execute([$email, $phone]);
+    $stmt = $pdo->prepare('SELECT 1 FROM organizers WHERE email = ? OR phone = ? OR username = ? LIMIT 1');
+    $stmt->execute([$email, $phone, $username]);
     if ($stmt->fetchColumn()) { header('Location: register.php?error=organizer_exists&role=organizer'); exit; }
+    $stmt = $pdo->prepare("SELECT 1 FROM organizer_requests WHERE status = 'pending' AND (email = ? OR phone = ? OR username = ?) LIMIT 1");
+    $stmt->execute([$email, $phone, $username]);
+    if ($stmt->fetchColumn()) { header('Location: register.php?error=organizer_exists&role=organizer'); exit; }
+} else {
+    $stmt = $pdo->prepare('SELECT 1 FROM users WHERE username = ? OR email = ? OR phone = ? LIMIT 1');
+    $stmt->execute([$username, $email, $phone]);
+    if ($stmt->fetchColumn()) { header('Location: register.php?error=exists&role=user'); exit; }
 }
 
 $otp = (string)random_int(100000, 999999);

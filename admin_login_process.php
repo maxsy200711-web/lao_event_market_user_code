@@ -25,6 +25,8 @@ session_regenerate_id(true);
 $_SESSION['admin_id']   = $admin['admin_id'];
 $_SESSION['admin_name'] = $admin['full_name'];
 $_SESSION['admin_role'] = $admin['role']; // 'superadmin' ຫຼື 'admin'
+$_SESSION['admin_source'] = 'admins';
+$_SESSION['admin_email'] = $admin['email'];
 
 header("Location: admin_dashboard.php");
 exit;

@@ -11,7 +11,9 @@ $category = (int)($_GET['category'] ?? 0);
 $date = trim($_GET['date'] ?? '');
 
 $provinces = $pdo->query("SELECT province_id, province_name FROM provinces ORDER BY province_name")->fetchAll();
-$categories = $pdo->query("SELECT category_id, category_name FROM categories ORDER BY category_name")->fetchAll();
+
+// 1. ປ່ຽນ SQL Query ໃຫ້ດຶງ category_name_en ມາພ້ອມ
+$categories = $pdo->query("SELECT category_id, category_name, category_name_en FROM categories ORDER BY category_name")->fetchAll();
 
 // ດຶງສະເພາະງານທີ່ວັນທີສິ້ນສຸດ (end_date) ຍັງບໍ່ທັນກາຍວັນທີປັດຈຸບັນ (e.end_date >= CURDATE())
 $sql = "SELECT e.event_id, e.title, e.description, e.banner_img, e.location,
@@ -80,6 +82,7 @@ $heroImages = [
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@100..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="assets/site-logo.css">
 <style>
 :root {
   --primary: #10B981;
@@ -499,55 +502,7 @@ footer { background: var(--dark); color: #94A3B8; padding: 40px 0 24px; font-siz
 </style>
 </head>
 <body>
-
-<header class="top">
-  <div class="topbar wrapper">
-    <a class="brand" href="index.php">
-      <span class="brand-mark"><i class="ti ti-home-2"></i></span>
-      <span><b>LAO</b>event<b>Market</b></span>
-    </a>
-
-    <!-- ຊ່ອງຄົ້ນຫາເທິງ Header -->
-    <form class="top-search" method="get" action="index.php#events">
-      <i class="ti ti-search"></i>
-      <input name="q" value="<?= htmlspecialchars($q) ?>" data-i18n-placeholder="search" placeholder="ຄົ້ນຫາ...">
-      <?php if ($province > 0): ?>
-        <input type="hidden" name="province" value="<?= $province ?>">
-      <?php endif; ?>
-      <?php if ($category > 0): ?>
-        <input type="hidden" name="category" value="<?= $category ?>">
-      <?php endif; ?>
-      <?php if ($date !== ''): ?>
-        <input type="hidden" name="date" value="<?= htmlspecialchars($date) ?>">
-      <?php endif; ?>
-    </form>
-
-    <div class="actions">
-      <button class="icon-btn" title="Favorites"><i class="ti ti-heart"></i></button>
-      <button class="icon-btn" title="Notifications"><i class="ti ti-bell"></i></button>
-
-      <div class="lang-wrap">
-        <button class="lang-btn" id="langBtn"><i class="ti ti-world"></i> <span id="langText">ລາວ</span> <i class="ti ti-chevron-down"></i></button>
-        <div class="lang-menu" id="langMenu">
-          <button data-lang="lo">ລາວ</button>
-          <button data-lang="zh">中文</button>
-          <button data-lang="en">English</button>
-        </div>
-      </div>
-
-      <!-- ເອີ້ນໃຊ້ Authentication Widget -->
-      <?php include __DIR__ . '/auth_widget.php'; ?>
-    </div>
-  </div>
-
-  <nav class="nav wrapper">
-    <a class="active" href="index.php"><i class="ti ti-home"></i><span data-i18n="home">ໜ້າຫຼັກ</span></a>
-    <a href="#events"><span data-i18n="events">ງານຕະຫຼາດນັດ</span></a>
-    <a href="#categories"><span data-i18n="categories">ປະເພດງານ</span></a>
-    <a href="#news"><span data-i18n="news">ຂ່າວສານ/ບົດຄວາມ</span></a>
-    <a href="#contact"><span data-i18n="contact">ຕິດຕໍ່</span></a>
-  </nav>
-</header>
+<?php include __DIR__ . '/site_header.php'; ?>
 
 <main>
 <section class="hero">
@@ -572,7 +527,7 @@ footer { background: var(--dark); color: #94A3B8; padding: 40px 0 24px; font-siz
   <label class="filter-field">
     <i class="ti ti-map-pin"></i>
     <select name="province">
-      <option value="0" data-i18n="allRegions">ທຸກພາກ</option>
+      <option value="0" data-i18n="allRegions">ທຸກແຂວງ</option>
       <?php foreach ($provinces as $p): ?>
         <option value="<?= (int)$p['province_id'] ?>" <?= $province === (int)$p['province_id'] ? 'selected' : '' ?>>
           <?= htmlspecialchars($p['province_name']) ?>
@@ -596,10 +551,14 @@ footer { background: var(--dark); color: #94A3B8; padding: 40px 0 24px; font-siz
     <?php
     $icons = ['ti-tools-kitchen-2','ti-basket','ti-shirt','ti-gift','ti-plant-2','ti-camera','ti-music','ti-grid-dots'];
     foreach ($categories as $i => $cat):
+      // 2. ເພີ່ມເງື່ອນໄຂລວມ 2 ພາສາ[cite: 10]
+      $lao_name = $cat['category_name'];
+      $en_name = $cat['category_name_en'] ?? '';
+      $display = !empty($en_name) ? "{$lao_name} ({$en_name})" : $lao_name;
     ?>
       <a class="category" href="index.php?category=<?= (int)$cat['category_id'] ?>#events">
         <span class="cat-icon"><i class="ti <?= $icons[$i % count($icons)] ?>"></i></span>
-        <span><?= htmlspecialchars($cat['category_name']) ?></span>
+        <span><?= htmlspecialchars($display) ?></span>
       </a>
     <?php endforeach; ?>
   </div>
@@ -656,33 +615,7 @@ footer { background: var(--dark); color: #94A3B8; padding: 40px 0 24px; font-siz
 </section>
 </main>
 
-<footer id="contact">
-  <div class="footer-main wrapper">
-    <div>
-      <div class="brand footer-brand"><span class="brand-mark"><i class="ti ti-home-2"></i></span><span><b>LAO</b>event<b>Market</b></span></div>
-      <p data-i18n="footerDesc">ເວັບໄຊລວບລວມງານຕະຫຼາດນັດໃນປະເທດລາວ ຊ່ວຍໃຫ້ທ່ານຄົ້ນຫາກິດຈະກຳໄດ້ງ່າຍຂຶ້ນ</p>
-    </div>
-    <div>
-      <h3 data-i18n="quickMenu">ເມນູດ່ວນ</h3>
-      <a href="index.php" data-i18n="home">ໜ້າຫຼັກ</a>
-      <a href="#events" data-i18n="events">ງານຕະຫຼາດນັດ</a>
-      <a href="#location" data-i18n="locations">ສະຖານທີ່</a>
-      <a href="#categories" data-i18n="categories">ປະເພດງານ</a>
-    </div>
-    <div>
-      <h3 data-i18n="support">ສະໜັບສະໜູນ</h3>
-      <a href="#" data-i18n="faq">ຄຳຖາມທີ່ພົບເລື້ອຍ</a>
-      <a href="#" data-i18n="guide">ຄູ່ມືການໃຊ້ງານ</a>
-      <a href="#" data-i18n="privacy">ນະໂຍບາຍຄວາມເປັນສ່ວນຕົວ</a>
-    </div>
-    <div>
-      <h3 data-i18n="contact">ຕິດຕໍ່ພວກເຮົາ</h3>
-      <p><i class="ti ti-phone"></i> 020 99 326 122</p>
-      <p><i class="ti ti-mail"></i> info@laoeventmarket.la</p>
-    </div>
-  </div>
-  <div class="copyright">© <?= date('Y') ?> LAOeventMarket. All rights reserved.</div>
-</footer>
+<?php include __DIR__ . '/site_footer.php'; ?>
 
 <script>
 const translations = {
@@ -747,7 +680,8 @@ const translations = {
     quickMenu: "快捷菜单",
     support: "支持与帮助",
     faq: "常见问题",
-    guide: "隐私政策"
+    guide: "使用指南",
+    privacy: "隐私政策"
   },
   en: {
     search: "Search...",

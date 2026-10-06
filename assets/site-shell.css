@@ -1,0 +1,42 @@
+@import url("site-logo.css");
+:root{--shell-primary:#10B981;--shell-primary-hover:#059669;--shell-dark:#111827;--shell-border:#E2E8F0;--shell-muted:#64748B;--shell-font:'Noto Sans Lao',sans-serif}
+header.top{background:#fff;border-bottom:1px solid var(--shell-border);position:sticky;top:0;z-index:100;width:100%;color:#334155;font-family:var(--shell-font)}
+.wrapper{width:100%;max-width:1440px;margin:0 auto;padding:0 20px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;text-decoration:none;font-size:20px;color:var(--shell-dark);font-weight:700;white-space:nowrap}
+.brand b{color:var(--shell-primary)}
+.brand-mark{background:#ECFDF5;color:var(--shell-primary);padding:8px;border-radius:8px;display:flex}
+.top-search{flex:1;max-width:500px;position:relative;min-width:200px}
+.top-search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--shell-muted)}
+.top-search input{width:100%;padding:10px 16px 10px 42px;border-radius:20px;border:1px solid var(--shell-border);outline:none;font-size:14px;background:#F1F5F9;font-family:var(--shell-font)}
+.actions{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.icon-btn{background:transparent;border:0;font-size:22px;cursor:pointer;color:var(--shell-muted)}
+.btn{padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;cursor:pointer;display:inline-block;white-space:nowrap}
+.btn-outline{border:1px solid var(--shell-border);color:var(--shell-dark)}
+.btn-green{background:var(--shell-primary);color:#fff;border:0}
+.btn-green:hover{background:var(--shell-primary-hover)}
+.lang-wrap{position:relative}
+.lang-btn{background:transparent;border:1px solid var(--shell-border);padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-family:var(--shell-font)}
+.lang-menu{display:none;position:absolute;right:0;top:100%;background:#fff;border:1px solid var(--shell-border);border-radius:8px;box-shadow:0 4px 12px #0002;margin-top:4px;z-index:110;min-width:110px}
+.lang-menu.show{display:block}
+.lang-menu button{width:100%;text-align:left;padding:8px 12px;background:none;border:0;cursor:pointer;font-size:14px;font-family:var(--shell-font)}
+.lang-menu button:hover{background:#F8FAFC}
+.nav{display:flex;gap:24px;padding:10px 20px;border-top:1px solid var(--shell-border);overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nav a{text-decoration:none;color:var(--shell-muted);font-size:14px;display:flex;align-items:center;gap:6px;font-weight:500;flex-shrink:0}
+.nav a.active,.nav a:hover{color:var(--shell-primary)}
+footer{background:var(--shell-dark);color:#94A3B8;padding:40px 0 24px;font-size:14px;font-family:var(--shell-font)}
+.footer-main{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;margin-bottom:32px}
+.footer-main h3{color:#fff;margin-bottom:16px;font-size:15px}
+.footer-main a{color:#94A3B8;text-decoration:none;display:block;margin-bottom:10px}
+.footer-main a:hover{color:#fff}
+.footer-brand{color:#fff;margin-bottom:12px}
+.copyright{text-align:center;border-top:1px solid #1E293B;padding-top:20px;font-size:13px}
+.user-menu{display:flex;align-items:center;gap:10px;background:#F1F5F9;padding:6px 14px;border-radius:20px;border:1px solid var(--shell-border)}
+.user-avatar{width:28px;height:28px;background:var(--shell-primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold}
+.user-email-text{font-size:13px;font-weight:600;color:#1E293B;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout,.btn-profile{text-decoration:none;font-size:16px;display:flex;align-items:center;margin-left:4px}
+.btn-logout{color:#EF4444}.btn-profile{color:#059669}
+.site-language-picker{position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;align-items:center;gap:7px;padding:7px 10px;background:#fff;border:1px solid var(--shell-border);border-radius:9px;box-shadow:0 4px 14px #0f172a20;font:12px var(--shell-font);color:#334155}
+.site-language-picker select{border:0;background:transparent;color:#111827;font:12px var(--shell-font);outline:none;cursor:pointer}
+@media(max-width:600px){.wrapper{padding-left:16px;padding-right:16px}.topbar{flex-direction:column;align-items:stretch;gap:12px}.actions{justify-content:space-between;width:100%}.top-search{max-width:100%}}

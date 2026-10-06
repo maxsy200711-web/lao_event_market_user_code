@@ -85,5 +85,6 @@ function stars(?float $n): string {
         </div>
     </div>
 </div>
-</body>
+<script src="assets/site-i18n.js"></script>
+    </body>
 </html>

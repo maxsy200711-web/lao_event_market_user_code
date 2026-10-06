@@ -150,5 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }, 1000);
 </script>
 
-</body>
+<script src="assets/site-i18n.js"></script>
+    </body>
 </html>

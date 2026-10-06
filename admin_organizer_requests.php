@@ -1,7 +1,12 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_admin.php';
-$requests = $pdo->query("SELECT r.*, u.email, u.full_name FROM organizer_requests r JOIN users u ON u.user_id = r.user_id WHERE r.status = 'pending' ORDER BY r.created_at ASC")->fetchAll();
+$perPage = 10;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$totalRows = (int)$pdo->query("SELECT COUNT(*) FROM organizer_requests WHERE status = 'pending'")->fetchColumn();
+$page = min($page, max(1, (int)ceil($totalRows / $perPage)));
+$offset = ($page - 1) * $perPage;
+$requests = $pdo->query("SELECT r.* FROM organizer_requests r WHERE r.status = 'pending' ORDER BY r.created_at ASC LIMIT $perPage OFFSET $offset")->fetchAll();
 $active = 'organizer_requests';
 ?><!doctype html>
 <html lang="lo">
@@ -10,7 +15,7 @@ $active = 'organizer_requests';
     <title>Organizer Requests | Admin - LAOeventMarket</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="assets/admin.css">
+    <link rel="stylesheet" href="assets/admin.css?v=20261002-pagination">
     <style>
         .request-actions { display:flex; gap:8px; align-items:center; }
         .btn-approve, .btn-reject { color:#fff; padding:7px 12px; border-radius:6px; text-decoration:none; font-size:12px; }
@@ -32,11 +37,11 @@ $active = 'organizer_requests';
             <?php else: ?>
                 <table class="data-table">
                     <tr>
-                        <th>User</th><th>Email</th><th>Organizer</th><th>Company</th><th>Phone</th><th>Action</th>
+                        <th>Username</th><th>Email</th><th>Organizer</th><th>Company</th><th>Phone</th><th>Action</th>
                     </tr>
                     <?php foreach ($requests as $request): ?>
                         <tr>
-                            <td><?= htmlspecialchars($request['full_name']) ?></td>
+                            <td><?= htmlspecialchars($request['username'] ?? '-') ?></td>
                             <td><?= htmlspecialchars($request['email']) ?></td>
                             <td><?= htmlspecialchars($request['organizer_name']) ?></td>
                             <td><?= htmlspecialchars($request['company_name'] ?: '-') ?></td>
@@ -51,8 +56,10 @@ $active = 'organizer_requests';
                     <?php endforeach; ?>
                 </table>
             <?php endif; ?>
+            <?php require_once __DIR__ . '/admin_pagination.php'; admin_pagination($totalRows, $perPage, $page); ?>
         </div>
     </div>
 </div>
-</body>
+<script src="assets/site-i18n.js?v=20260930-admin-locale"></script>
+    </body>
 </html>

@@ -75,5 +75,6 @@ $label = ['pending' => 'ລໍຖ້າອະນຸມັດ', 'approved' => '�
         </div>
     </div>
 </div>
-</body>
+<script src="assets/site-i18n.js"></script>
+    </body>
 </html>

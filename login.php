@@ -1,2 +1,38 @@
-<?php $error = isset($_GET['error']); $registered = isset($_GET['registered']); ?>
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login - LAOeventMarket</title><style>body{font-family:Arial;display:grid;place-items:center;min-height:100vh;margin:0;background:linear-gradient(#0f172acc,#0f172acc),url('https://media02.stockfood.com/largepreviews/MjIxMDQzODg0OQ==/71304479-Night-market-in-Vientiane-on-the-banks-of-the-Mekong-Laos.jpg') center/cover}.card{background:#fff;padding:32px;border-radius:16px;width:min(400px,calc(100% - 56px));box-shadow:0 20px 30px #0005}h1{text-align:center;color:#10b981}p{text-align:center;color:#64748b}label{display:block;margin:14px 0 6px;font-size:14px}input,button{width:100%;height:44px;box-sizing:border-box;padding:0 12px;border:1px solid #dbe3ea;border-radius:8px}button{margin-top:18px;background:#10b981;color:white;border:0;font-weight:bold;cursor:pointer}.error{color:#b91c1c;background:#fee2e2;padding:10px;border-radius:7px}.ok{color:#047857;background:#d1fae5;padding:10px;border-radius:7px}a{color:#059669}</style></head><body><div class="card"><h1>LAOeventMarket</h1><p>Sign in to your account</p><?php if($error): ?><p class="error">Username/email or password is incorrect.</p><?php endif; ?><?php if($registered): ?><p class="ok">Registration complete. Please sign in.</p><?php endif; ?><form action="login_process.php" method="post"><label>Username or email</label><input name="username" required autofocus><label>Password</label><input type="password" name="password" required><button>Login</button></form><p>Don't have an account? <a href="register.php">Register</a></p></div></body></html>
+<?php
+$errorCode = $_GET['error'] ?? '';
+$error = $errorCode !== '';
+$registered = isset($_GET['registered']);
+$registeredOrganizer = ($_GET['role'] ?? '') === 'organizer';
+?>
+<!doctype html>
+<html lang="lo">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - LAOeventMarket</title>
+    <link rel="stylesheet" href="assets/auth.css">
+</head>
+<body>
+<main class="auth-card">
+    <a class="auth-brand" href="index.php" aria-label="LAOeventMarket home">
+        <?php include __DIR__ . '/site_logo.php'; ?>
+    </a>
+    <p class="auth-title">Sign in to your account</p>
+    <?php if ($errorCode === 'organizer_pending'): ?><p class="auth-message auth-error">Your Organizer account is waiting for Admin approval.</p>
+    <?php elseif ($errorCode === 'organizer_rejected'): ?><p class="auth-message auth-error">Your Organizer registration was rejected. Please contact the administrator.</p>
+    <?php elseif ($error): ?><p class="auth-message auth-error">Username/email or password is incorrect.</p><?php endif; ?>
+    <?php if ($registered && $registeredOrganizer): ?><p class="auth-message auth-ok">Registration complete. Your Organizer account is waiting for Admin approval.</p>
+    <?php elseif ($registered): ?><p class="auth-message auth-ok">Registration complete. Please sign in.</p><?php endif; ?>
+    <form class="auth-form" action="login_process.php" method="post">
+        <label for="username">Username or email</label>
+        <input id="username" name="username" required autofocus autocomplete="username">
+        <label for="password">Password</label>
+        <input id="password" type="password" name="password" required autocomplete="current-password">
+        <button class="auth-submit" type="submit">Login</button>
+    </form>
+    <p class="auth-switch">Don't have an account? <a href="register.php">Register</a></p>
+    <div class="auth-home"><a href="index.php">Back to home</a></div>
+</main>
+<script src="assets/site-i18n.js"></script>
+    </body>
+</html>

@@ -21,12 +21,41 @@ if ($adminPasswordOk) {
     $_SESSION['admin_id'] = $admin['admin_id'];
     $_SESSION['admin_name'] = $admin['full_name'];
     $_SESSION['admin_role'] = $admin['role'] ?? 'admin';
+    $_SESSION['admin_source'] = 'admins';
+    $_SESSION['admin_email'] = $admin['email'];
     $_SESSION['role'] = 'admin';
     header('Location: admin_dashboard.php'); exit;
 }
 
-// 2) Find the account in users first. The role column is the source of truth
-// for accounts that were promoted through the organizer request workflow.
+// 2) Organizer accounts and credentials are stored directly in organizers.
+$stmt = $pdo->prepare('SELECT * FROM organizers WHERE username = ? OR email = ? LIMIT 1');
+$stmt->execute([$identifier, $identifier]);
+$organizer = $stmt->fetch();
+if ($organizer && !empty($organizer['password']) && password_verify($password, $organizer['password'])) {
+    if (strtolower($organizer['status'] ?? '') === 'approved' && (int)$organizer['is_verified'] === 1) {
+        session_regenerate_id(true);
+        unset($_SESSION['user_id'], $_SESSION['user_email'], $_SESSION['full_name'], $_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role']);
+        $_SESSION['organizer_id'] = (int)$organizer['organizer_id'];
+        $_SESSION['organizer_name'] = $organizer['organizer_name'];
+        $_SESSION['company_name'] = $organizer['company_name'] ?? '';
+        $_SESSION['organizer_email'] = $organizer['email'];
+        $_SESSION['organizer_username'] = $organizer['username'];
+        $_SESSION['role'] = 'organizer';
+        header('Location: organizer_dashboard.php'); exit;
+    }
+    $error = strtolower($organizer['status'] ?? '') === 'rejected' ? 'organizer_rejected' : 'organizer_pending';
+    header('Location: login.php?error=' . $error); exit;
+}
+
+// Let applicants know their Organizer credentials are awaiting review without creating a user row.
+$stmt = $pdo->prepare("SELECT password FROM organizer_requests WHERE status = 'pending' AND (username = ? OR email = ?) ORDER BY created_at DESC LIMIT 1");
+$stmt->execute([$identifier, $identifier]);
+$pendingRequest = $stmt->fetch();
+if ($pendingRequest && !empty($pendingRequest['password']) && password_verify($password, $pendingRequest['password'])) {
+    header('Location: login.php?error=organizer_pending'); exit;
+}
+
+// 3) Normal users and legacy admin accounts authenticate from users.
 $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? OR username = ? OR full_name = ? LIMIT 1');
 $stmt->execute([$identifier, $identifier, $identifier]);
 $user = $stmt->fetch();
@@ -38,45 +67,14 @@ if ($user && !empty($user['password']) && password_verify($password, $user['pass
     $_SESSION['admin_id'] = $user['user_id'];
     $_SESSION['admin_name'] = $user['full_name'];
     $_SESSION['admin_role'] = 'admin';
+    $_SESSION['admin_source'] = 'users';
+    $_SESSION['admin_email'] = $user['email'];
     $_SESSION['role'] = 'admin';
     header('Location: admin_dashboard.php'); exit;
 }
 
-if ($user && !empty($user['password']) && password_verify($password, $user['password']) && ($user['role_id'] ?? 'USER') === 'ORGANIZER') {
-    $stmt = $pdo->prepare('SELECT o.* FROM organizer_users ou JOIN organizers o ON o.organizer_id = ou.organizer_id WHERE ou.user_id = ? ORDER BY ou.created_at ASC LIMIT 1');
-    $stmt->execute([$user['user_id']]);
-    $organizer = $stmt->fetch();
-    if ($organizer) {
-        session_regenerate_id(true);
-        unset($_SESSION['user_id'], $_SESSION['user_email'], $_SESSION['full_name'], $_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role']);
-        $_SESSION['organizer_id'] = $organizer['organizer_id'];
-        $_SESSION['user_id'] = $user['user_id'];
-        $_SESSION['user_email'] = $user['email'];
-        $_SESSION['organizer_name'] = $organizer['organizer_name'];
-        $_SESSION['company_name'] = $organizer['company_name'] ?? '';
-        $_SESSION['organizer_email'] = $organizer['email'];
-        $_SESSION['role'] = 'organizer';
-        header('Location: organizer_dashboard.php'); exit;
-    }
-}
-
-// 3) Legacy organizer accounts that are not linked to users.user_id.
-$stmt = $pdo->prepare('SELECT * FROM organizers WHERE email = ? OR organizer_name = ? LIMIT 1');
-$stmt->execute([$identifier, $identifier]);
-$organizer = $stmt->fetch();
-if ($organizer && !empty($organizer['password']) && password_verify($password, $organizer['password'])) {
-    session_regenerate_id(true);
-    unset($_SESSION['user_id'], $_SESSION['user_email'], $_SESSION['full_name'], $_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role']);
-    $_SESSION['organizer_id'] = $organizer['organizer_id'];
-    $_SESSION['organizer_name'] = $organizer['organizer_name'];
-    $_SESSION['company_name'] = $organizer['company_name'] ?? '';
-    $_SESSION['organizer_email'] = $organizer['email'];
-    $_SESSION['role'] = 'organizer';
-    header('Location: organizer_dashboard.php'); exit;
-}
-
-// 4) General user: full_name is the current username field.
-if ($user && !empty($user['password']) && password_verify($password, $user['password'])) {
+// 4) Only USER records may enter the normal-user area; legacy organizer rows stay inactive here.
+if ($user && ($user['role_id'] ?? 'USER') === 'USER' && !empty($user['password']) && password_verify($password, $user['password'])) {
     session_regenerate_id(true);
     unset($_SESSION['organizer_id'], $_SESSION['organizer_email'], $_SESSION['organizer_name'], $_SESSION['company_name'], $_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role']);
     $_SESSION['user_id'] = $user['user_id'];

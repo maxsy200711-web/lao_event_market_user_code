@@ -24,7 +24,7 @@ $label = ['pending' => 'ລໍຖ້າ', 'approved' => 'ອະນຸມັດ�
 <title>ພາບລວມລະບົບ | Admin - LAOeventMarket</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="assets/admin.css">
+<link rel="stylesheet" href="assets/admin.css?v=20261002-admin-colors">
 </head>
 <body>
 <?php include __DIR__ . "/admin_topbar.php"; ?>
@@ -35,12 +35,12 @@ $label = ['pending' => 'ລໍຖ້າ', 'approved' => 'ອະນຸມັດ�
         <p class="page-title" style="margin-bottom:16px">ພາບລວມລະບົບ</p>
 
         <div class="stat-grid">
-            <div class="stat-card"><p class="label">User ທັງໝົດ</p><p class="value"><?= number_format($total_users) ?></p></div>
-            <div class="stat-card"><p class="label">Organizer ທັງໝົດ</p><p class="value"><?= number_format($total_organizers) ?></p></div>
-            <div class="stat-card"><p class="label">ງານຕະຫຼາດນັດທັງໝົດ</p><p class="value"><?= number_format($total_events) ?></p></div>
-            <div class="stat-card"><p class="label">ລິວິວທັງໝົດ</p><p class="value"><?= number_format($total_reviews) ?></p></div>
-            <div class="stat-card"><p class="label">ລໍຖ້າອະນຸມັດ</p><p class="value" style="color:#854F0B"><?= number_format($pending_count) ?></p></div>
-            <div class="stat-card"><p class="label">ອະນຸມັດແລ້ວ</p><p class="value" style="color:#0F6E56"><?= number_format($approved_count) ?></p></div>
+            <div class="stat-card stat-card--white"><p class="label">User ທັງໝົດ</p><p class="value"><?= number_format($total_users) ?></p></div>
+            <div class="stat-card stat-card--gray"><p class="label">Organizer ທັງໝົດ</p><p class="value"><?= number_format($total_organizers) ?></p></div>
+            <div class="stat-card stat-card--gray"><p class="label">ງານຕະຫຼາດນັດທັງໝົດ</p><p class="value"><?= number_format($total_events) ?></p></div>
+            <div class="stat-card stat-card--white"><p class="label">ລິວິວທັງໝົດ</p><p class="value"><?= number_format($total_reviews) ?></p></div>
+            <div class="stat-card stat-card--red"><p class="label">ລໍຖ້າອະນຸມັດ</p><p class="value" style="color:#B91C1C"><?= number_format($pending_count) ?></p></div>
+            <div class="stat-card stat-card--green"><p class="label">ອະນຸມັດແລ້ວ</p><p class="value" style="color:#0F6E56"><?= number_format($approved_count) ?></p></div>
         </div>
 
         <div class="panel">
@@ -63,5 +63,6 @@ $label = ['pending' => 'ລໍຖ້າ', 'approved' => 'ອະນຸມັດ�
         </div>
     </div>
 </div>
-</body>
+<script src="assets/site-i18n.js?v=20260930-admin-locale"></script>
+    </body>
 </html>

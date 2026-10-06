@@ -43,5 +43,6 @@ $error = $_GET['error'] ?? '';
     <p class="notice">Restricted Area — Authorized Personnel Only</p>
 </div>
 </div>
-</body>
+<script src="assets/site-i18n.js?v=20260930-admin-locale"></script>
+    </body>
 </html>

@@ -1,119 +1,57 @@
 <?php
-require_once __DIR__ . "/config.php";
-require_once __DIR__ . "/auth_admin.php";
-
-// Process Verify / Unverify Actions
-if (isset($_GET['action']) && $_GET['action'] === 'toggle_verify') {
-    $org_id = (int)($_GET['id'] ?? 0);
-    $status = (int)($_GET['status'] ?? 0);
-    if ($org_id > 0) {
-        $stmt = $pdo->prepare("UPDATE organizers SET is_verified = ? WHERE organizer_id = ?");
-        $stmt->execute([$status, $org_id]);
-    }
-    header("Location: admin_users.php?tab=organizers");
-    exit;
-}
-
-$tab = ($_GET['tab'] ?? 'users') === 'organizers' ? 'organizers' : 'users';
-
-if ($tab === 'users') {
-    $rows = $pdo->query("SELECT user_id AS id, username, full_name AS name, email, phone, create_at
-                         FROM users ORDER BY user_id DESC")->fetchAll();
-} else {
-    // ດຶງຂໍ້ມູນ is_verified ເພີ່ມ
-    $rows = $pdo->query("SELECT organizer_id AS id, organizer_name AS name, company_name, email, phone, is_verified
-                         FROM organizers ORDER BY organizer_id DESC")->fetchAll();
-}
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/auth_admin.php';
+$active = 'users';
+$accountType = ($_GET['type'] ?? 'users') === 'admins' ? 'admins' : 'users';
+$where = $accountType === 'admins' ? "role_id = 'ADMIN'" : "role_id NOT IN ('ORGANIZER','ADMIN')";
+$perPage = 10;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$totalRows = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE $where")->fetchColumn();
+$page = min($page, max(1, (int)ceil($totalRows / $perPage)));
+$offset = ($page - 1) * $perPage;
+$rows = $pdo->query("SELECT user_id, username, full_name, email, phone, role_id, is_verified, create_at FROM users WHERE $where ORDER BY user_id DESC LIMIT $perPage OFFSET $offset")->fetchAll();
 ?>
 <!doctype html>
-<html lang="lo">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ຈັດການຜູ້ໃຊ້ | Admin - LAOeventMarket</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="assets/admin.css">
-<style>
-.badge-verified { color: #1D9BF0; font-size: 18px; vertical-align: middle; margin-left: 4px; }
-.btn-verify { background: #1D9BF0; color: #fff; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; }
-.btn-unverify { background: #64748B; color: #fff; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; }
-</style>
-</head>
-<body>
-<?php include __DIR__ . "/admin_topbar.php"; ?>
+<html lang="lo"><head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Manage Users | LAOeventMarket Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="assets/admin.css?v=20261002-pagination">
+</head><body>
+<?php include __DIR__ . '/admin_topbar.php'; ?>
 <div class="app-shell">
-    <?php $active = 'users'; include __DIR__ . "/admin_sidebar.php"; ?>
-
-    <div class="content">
-        <p class="page-title" style="margin-bottom:16px">ຈັດການຜູ້ໃຊ້ທັງໝົດ</p>
-
-        <?php if (isset($_GET['deleted'])): ?>
-            <div style="background:#E1F5EE;color:#0F6E56;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px">ລຶບບັນຊີສຳເລັດແລ້ວ</div>
-        <?php endif; ?>
-
-        <div class="tabs">
-            <a href="admin_users.php?tab=users" class="tab-link <?= $tab === 'users' ? 'active' : '' ?>">ຜູ້ໃຊ້ທົ່ວໄປ (User)</a>
-            <a href="admin_users.php?tab=organizers" class="tab-link <?= $tab === 'organizers' ? 'active' : '' ?>">ຜູ້ຈັດງານ (Organizer)</a>
-        </div>
-
-        <div class="panel">
-            <?php if ($tab === 'users'): ?><p style="margin-bottom:14px"><a href="admin_user_form.php" class="btn btn-primary">+ Add User</a></p><?php endif; ?>
-            <?php if (empty($rows)): ?>
-                <div class="empty-state"><i class="ti ti-users"></i>ຍັງບໍ່ມີຂໍ້ມູນ</div>
-            <?php elseif ($tab === 'users'): ?>
-            <table class="data-table">
-                <tr><th>Username</th><th>Full name</th><th>Email</th><th>Phone</th><th>Created</th><th>Action</th></tr>
-                <?php foreach ($rows as $r): ?>
-                <tr>
-                    <td><?= htmlspecialchars($r['username']) ?></td>
-                    <td><?= htmlspecialchars($r['name']) ?></td>
-                    <td><?= htmlspecialchars($r['email']) ?></td>
-                    <td><?= htmlspecialchars($r['phone'] ?: '-') ?></td>
-                    <td><?= htmlspecialchars(date('d/m/Y', strtotime($r['create_at']))) ?></td>
-                    <td>
-                        <a href="admin_user_form.php?id=<?= $r['id'] ?>" class="btn btn-primary">Edit</a>
-                        <a href="admin_user_delete.php?type=user&id=<?= $r['id'] ?>" class="btn btn-danger"
-                           onclick="return confirm('ຢືນຢັນການລຶບບັນຊີນີ້ບໍ?')">ລຶບ</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </table>
+    <?php include __DIR__ . '/admin_sidebar.php'; ?>
+    <main class="content">
+        <p class="page-title" style="margin-bottom:16px">ຈັດການບັນຊີ</p>
+        <nav class="tabs"><a class="tab-link <?= $accountType === 'users' ? 'active' : '' ?>" href="admin_users.php?type=users">ຜູ້ໃຊ້ທົ່ວໄປ</a><a class="tab-link <?= $accountType === 'admins' ? 'active' : '' ?>" href="admin_users.php?type=admins">ຜູ້ດູແລລະບົບ</a></nav>
+        <?php if (isset($_GET['saved'])): ?><div class="panel" style="color:#047857">ບັນທຶກຂໍ້ມູນສຳເລັດ</div><?php endif; ?>
+        <?php if (isset($_GET['deleted'])): ?><div class="panel" style="color:#047857">ລຶບບັນຊີສຳເລັດ</div><?php endif; ?>
+        <?php if (($_GET['error'] ?? '') === 'self_delete'): ?><div class="panel" style="color:#B91C1C">ບໍ່ສາມາດລຶບບັນຊີທີ່ກຳລັງໃຊ້ງານຢູ່ໄດ້</div><?php endif; ?>
+        <?php if (($_GET['error'] ?? '') === 'delete_failed'): ?><div class="panel" style="color:#B91C1C">ລຶບບັນຊີບໍ່ສຳເລັດ ເນື່ອງຈາກຍັງມີຂໍ້ມູນອື່ນອ້າງອີງຢູ່</div><?php endif; ?>
+        <section class="panel">
+            <p style="margin-bottom:14px"><a href="admin_user_form.php?type=<?= htmlspecialchars($accountType) ?>" class="btn" style="background:#10B981;color:#fff">+ ເພີ່ມ<?= $accountType === 'admins' ? 'ຜູ້ດູແລ' : 'ຜູ້ໃຊ້' ?></a></p>
+            <?php if (!$rows): ?>
+                <div class="empty-state"><i class="ti ti-users"></i>ບໍ່ພົບບັນຊີ</div>
             <?php else: ?>
-            <table class="data-table">
-                <tr><th>ຊື່ຜູ້ຈັດງານ</th><th>ບໍລິສັດ</th><th>ອີເມວ</th><th>ເບີໂທ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr>
-                <?php foreach ($rows as $r): ?>
-                <tr>
-                    <td>
-                        <?= htmlspecialchars($r['name']) ?>
-                        <?php if (!empty($r['is_verified'])): ?>
-                            <i class="ti ti-circle-check-filled badge-verified" title="ບັນຊີໄດ້ຮັບການຢືນຢັນແລ້ວ"></i>
-                        <?php endif; ?>
-                    </td>
-                    <td><?= htmlspecialchars($r['company_name'] ?: '-') ?></td>
-                    <td><?= htmlspecialchars($r['email']) ?></td>
-                    <td><?= htmlspecialchars($r['phone'] ?: '-') ?></td>
-                    <td>
-                        <?php if ($r['is_verified']): ?>
-                            <span style="color:#059669; font-weight:600; font-size:13px;">ຮັບຮອງແລ້ວ</span>
-                        <?php else: ?>
-                            <span style="color:#94A3B8; font-size:13px;">ທົ່ວໄປ</span>
-                        <?php endif; ?>
-                    </td>
-                    <td style="display:flex; gap:8px;">
-                        <?php if ($r['is_verified']): ?>
-                            <a href="admin_users.php?action=toggle_verify&id=<?= $r['id'] ?>&status=0" class="btn-unverify" onclick="return confirm('ຍົກເລີກການຮັບຮອງບໍ?')">ຍົກເລີກຮັບຮອງ</a>
-                        <?php else: ?>
-                            <a href="admin_users.php?action=toggle_verify&id=<?= $r['id'] ?>&status=1" class="btn-verify" onclick="return confirm('ຢືນຢັນການຮັບຮອງ Organizer ນີ້ບໍ?')">ຢືນຢັນຕົວຕົນ</a>
-                        <?php endif; ?>
-                        <a href="admin_user_delete.php?type=organizer&id=<?= $r['id'] ?>" class="btn btn-danger"
-                           onclick="return confirm('ຢືນຢັນການລຶບບັນຊີນີ້ບໍ? (ງານທັງໝົດຂອງລາວຈະຖືກລຶບນຳ)')">ລຶບ</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </table>
+                <table class="data-table"><thead><tr><th>ຊື່ຜູ້ໃຊ້</th><th>ຊື່ເຕັມ</th><th>ອີເມວ</th><th>ເບີໂທ</th><th>ສິດຜູ້ໃຊ້</th><th>ວັນທີສ້າງ</th><th>ຈັດການ</th></tr></thead><tbody>
+                    <?php foreach ($rows as $row): $canDelete = !($row['role_id'] === 'ADMIN' && ($_SESSION['admin_source'] ?? '') !== 'admins' && (int)$row['user_id'] === (int)$admin_id); ?><tr>
+                        <td><?= htmlspecialchars($row['username'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($row['full_name']) ?></td>
+                        <td><?= htmlspecialchars($row['email']) ?></td>
+                        <td><?= htmlspecialchars($row['phone'] ?: '-') ?></td>
+                        <td><span class="badge badge-role"><?= $row['role_id'] === 'ADMIN' ? 'ຜູ້ດູແລລະບົບ' : 'ຜູ້ໃຊ້' ?></span></td>
+                        <td><?= htmlspecialchars(date('d/m/Y', strtotime($row['create_at']))) ?></td>
+                        <td>
+                            <a href="admin_user_form.php?id=<?= (int)$row['user_id'] ?>&amp;type=<?= htmlspecialchars($accountType) ?>" class="btn btn-outline">ແກ້ໄຂ</a>
+                            <?php if ($canDelete): ?><a href="admin_user_delete.php?type=user&id=<?= (int)$row['user_id'] ?>" class="btn btn-danger" onclick="return confirm('ຢືນຢັນການລຶບບັນຊີນີ້?')">ລຶບ</a><?php endif; ?>
+                        </td>
+                    </tr><?php endforeach; ?>
+                </tbody></table>
+                <?php require_once __DIR__ . '/admin_pagination.php'; admin_pagination($totalRows, $perPage, $page); ?>
             <?php endif; ?>
-        </div>
-    </div>
+        </section>
+    </main>
 </div>
-</body>
-</html>
+<script src="assets/site-i18n.js?v=20260930-admin-locale"></script>
+    </body></html>

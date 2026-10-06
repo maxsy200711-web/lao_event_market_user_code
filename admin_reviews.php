@@ -2,12 +2,17 @@
 require_once __DIR__ . "/config.php";
 require_once __DIR__ . "/auth_admin.php";
 
+$perPage = 10;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$totalRows = (int)$pdo->query('SELECT COUNT(*) FROM reviews')->fetchColumn();
+$page = min($page, max(1, (int)ceil($totalRows / $perPage)));
+$offset = ($page - 1) * $perPage;
 $reviews = $pdo->query("SELECT r.review_id, r.rating, r.comment, r.create_at,
                                 u.full_name, e.title AS event_title
                          FROM reviews r
                          JOIN users u ON u.user_id = r.user_id
                          JOIN events e ON e.event_id = r.event_id
-                         ORDER BY r.review_id DESC")->fetchAll();
+                         ORDER BY r.review_id DESC LIMIT $perPage OFFSET $offset")->fetchAll();
 
 function stars(int $n): string { return str_repeat('★', $n) . str_repeat('☆', 5 - $n); }
 ?>
@@ -18,7 +23,7 @@ function stars(int $n): string { return str_repeat('★', $n) . str_repeat('☆'
 <title>ຈັດການລິວິວ | Admin - LAOeventMarket</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<link rel="stylesheet" href="assets/admin.css">
+<link rel="stylesheet" href="assets/admin.css?v=20261002-pagination">
 </head>
 <body>
 <?php include __DIR__ . "/admin_topbar.php"; ?>
@@ -53,8 +58,10 @@ function stars(int $n): string { return str_repeat('★', $n) . str_repeat('☆'
                 <?php endforeach; ?>
             </table>
             <?php endif; ?>
+            <?php require_once __DIR__ . '/admin_pagination.php'; admin_pagination($totalRows, $perPage, $page); ?>
         </div>
     </div>
 </div>
-</body>
+<script src="assets/site-i18n.js?v=20260930-admin-locale"></script>
+    </body>
 </html>

@@ -212,13 +212,13 @@ if (!$user) {
             margin-top: 10px;
         }
     </style>
+    <link rel="stylesheet" href="assets/site-logo.css">
 </head>
 <body>
 
 <header class="top">
     <a class="brand" href="index.php">
-        <span class="brand-mark"><i class="ti ti-home-2"></i></span>
-        <span><b>LAO</b>event<b>Market</b></span>
+        <?php include __DIR__ . '/site_logo.php'; ?>
     </a>
     <a href="index.php" class="btn btn-outline"><i class="ti ti-arrow-left"></i> ກັບໜ້າຫຼັກ</a>
 </header>
@@ -280,13 +280,10 @@ if (!$user) {
             </div>
         </form>
 
-        <p style="margin-top:20px;text-align:center">
-            <a href="become_organizer.php" style="color:#10B981;font-weight:600;text-decoration:none">
-                Become an Organizer
-            </a>
         </p>
     </div>
 </div>
 
-</body>
+<script src="assets/site-i18n.js"></script>
+    </body>
 </html>

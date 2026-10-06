@@ -26,13 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
         if ($rating < 1 || $rating > 5) {
             $review_error = 'ກະລຸນາເລືອກຄະແນນດາວ (1-5 ດາວ)';
         } else {
-            // ເພີ່ມ ຫຼື ອັບເດດຣີວິວ
+            // ເພີ່ມ ຫຼື ອັບເດດຣີວິວ (ໃຊ້ Parameter binding ເພື່ອຄວາມປອດໄພ)
             $stmt = $pdo->prepare("
                 INSERT INTO reviews (user_id, event_id, rating, comment, create_at) 
                 VALUES (?, ?, ?, ?, NOW())
-                ON DUPLICATE KEY UPDATE rating = VALUES(rating), comment = VALUES(comment), create_at = NOW()
+                ON DUPLICATE KEY UPDATE rating = ?, comment = ?, create_at = NOW()
             ");
-            if ($stmt->execute([$user_id, $event_id, $rating, $comment])) {
+            
+            if ($stmt->execute([$user_id, $event_id, $rating, $comment, $rating, $comment])) {
                 $review_success = 'ບັນທຶກການຣີວິວສຳເລັດແລ້ວ!';
             } else {
                 $review_error = 'ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຣີວິວ';
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
 }
 
 // -------------------------------------------------------------
-// 2. ດຶງຂໍ້ມູນງານຕະຫຼາດນັດ + ຂໍ້ມູນ Organizer (ເພີ່ມ o.is_verified)
+// 2. ດຶງຂໍ້ມູນງານຕະຫຼາດນັດ + ຂໍ້ມູນ Organizer
 // -------------------------------------------------------------
 $stmt = $pdo->prepare("
     SELECT e.*, o.organizer_name, o.company_name, o.email as org_email, o.phone as org_phone, o.is_verified 
@@ -59,10 +60,38 @@ if (!$event) {
 }
 
 // -------------------------------------------------------------
-// 3. ດຶງຂໍ້ມູນຮ້ານຄ້າ (Stalls)
+// 3. ດຶງຂໍ້ມູນຮ້ານຄ້າ (Stalls) + Pagination (9 ຮ້ານຕໍ່ໜ້າ)
 // -------------------------------------------------------------
-$stall_stmt = $pdo->prepare("SELECT * FROM event_stalls WHERE event_id = ? ORDER BY stall_id DESC");
-$stall_stmt->execute([$event_id]);
+$items_per_page = 9; // ກຳນົດ 9 ຮ້ານຕໍ່ 1 ໜ້າ
+$current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($current_page < 1) $current_page = 1;
+
+// ນັບຈຳນວນຮ້ານຄ້າທັງໝົດ
+$total_stalls_stmt = $pdo->prepare("SELECT COUNT(*) FROM event_stalls WHERE event_id = ?");
+$total_stalls_stmt->execute([$event_id]);
+$total_stalls_count = (int)$total_stalls_stmt->fetchColumn();
+
+// ຄຳນວນ Total Pages & Offset
+$total_pages = ceil($total_stalls_count / $items_per_page);
+if ($current_page > $total_pages && $total_pages > 0) {
+    $current_page = $total_pages;
+}
+$offset = ($current_page - 1) * $items_per_page;
+
+// ດຶງຂໍ້ມູນຮ້ານຄ້າສະເພາະ 9 ຮ້ານຂອງໜ້ານັ້ນໆ (ປ່ຽນ ? ມາເປັນ :event_id)
+$stall_stmt = $pdo->prepare("
+    SELECT * FROM event_stalls 
+    WHERE event_id = :event_id 
+    ORDER BY stall_id DESC 
+    LIMIT :limit OFFSET :offset
+");
+
+// Bind ປັດໄຈທັງໝົດດ້ວຍ Named Parameter
+$stall_stmt->bindValue(':event_id', $event_id, PDO::PARAM_INT);
+$stall_stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
+$stall_stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stall_stmt->execute();
+
 $stalls = $stall_stmt->fetchAll();
 
 // -------------------------------------------------------------
@@ -81,15 +110,15 @@ $reviews = $review_stmt->fetchAll();
 $avg_stmt = $pdo->prepare("SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews FROM reviews WHERE event_id = ?");
 $avg_stmt->execute([$event_id]);
 $rating_data = $avg_stmt->fetch();
-$avg_rating = round($rating_data['avg_rating'] ?? 0, 1);
-$total_reviews = $rating_data['total_reviews'] ?? 0;
+$avg_rating = round((float)($rating_data['avg_rating'] ?? 0), 1);
+$total_reviews = (int)($rating_data['total_reviews'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="lo">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($event['title']) ?> - LAOeventMarket</title>
+    <title><?= htmlspecialchars($event['title'] ?? 'Event Detail') ?> - LAOeventMarket</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -282,6 +311,46 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
         }
         .empty-stalls i { font-size: 40px; margin-bottom: 8px; display: block; color: #CBD5E1; }
 
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .page-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            height: 38px;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            color: var(--dark);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .page-link:hover {
+            background: #F1F5F9;
+            border-color: #CBD5E1;
+        }
+        .page-link.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+        .page-link.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            background: #F8FAFC;
+        }
+
         /* Review & Rating Styles */
         .reviews-section {
             margin-top: 40px;
@@ -393,13 +462,13 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
         .alert-error { background: #FEE2E2; color: #DC2626; }
         .alert-success { background: #ECFDF5; color: #059669; }
     </style>
+    <link rel="stylesheet" href="assets/site-logo.css">
 </head>
 <body>
 
 <header class="top">
     <a class="brand" href="index.php">
-        <span class="brand-mark"><i class="fa-solid fa-house"></i></span>
-        <span><b>LAO</b>event<b>Market</b></span>
+        <?php include __DIR__ . '/site_logo.php'; ?>
     </a>
     <a href="index.php" class="btn-back"><i class="fa-solid fa-arrow-left"></i> ກັບໜ້າຫຼັກ</a>
 </header>
@@ -407,8 +476,20 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
 <div class="container">
     <!-- Event Details Card -->
     <div class="event-card">
-        <?php if (!empty($event['banner_img'])): ?>
-            <img src="uploads/<?= htmlspecialchars($event['banner_img']) ?>" class="event-banner" alt="<?= htmlspecialchars($event['title']) ?>">
+        <?php 
+        $banner_img = $event['banner_img'] ?? '';
+        if (!empty($banner_img)) {
+            if (filter_var($banner_img, FILTER_VALIDATE_URL) || str_starts_with($banner_img, 'http://') || str_starts_with($banner_img, 'https://')) {
+                $final_banner = $banner_img;
+            } else {
+                $final_banner = 'uploads/' . $banner_img;
+            }
+        } else {
+            $final_banner = '';
+        }
+        ?>
+        <?php if (!empty($final_banner)): ?>
+            <img src="<?= htmlspecialchars($final_banner) ?>" class="event-banner" alt="<?= htmlspecialchars($event['title'] ?? '') ?>" referrerpolicy="no-referrer">
         <?php else: ?>
             <div style="height: 200px; background: #E2E8F0; display: flex; align-items: center; justify-content: center; color: #94A3B8;">
                 <i class="fa-regular fa-image" style="font-size: 48px;"></i>
@@ -417,7 +498,7 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
 
         <div class="event-details">
             <span class="badge-cat"><?= htmlspecialchars($event['category'] ?? 'General') ?></span>
-            <h1 class="event-title"><?= htmlspecialchars($event['title']) ?></h1>
+            <h1 class="event-title"><?= htmlspecialchars($event['title'] ?? '') ?></h1>
 
             <div class="info-grid">
                 <!-- Location Section Dynamic Integration -->
@@ -426,16 +507,19 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
                     <div class="info-text">
                         <small>ສະຖານທີ່ຈັດງານ</small>
                         <span>
-                            <?php if (!empty($event['map_url'])): ?>
+                            <?php 
+                            $loc_name = $event['location_name'] ?? $event['location'] ?? 'ເບິ່ງແຜນທີ່';
+                            if (!empty($event['map_url'])): 
+                            ?>
                                 <a href="<?= htmlspecialchars($event['map_url']) ?>" target="_blank" style="color: #2563EB; text-decoration: underline;">
-                                    <?= htmlspecialchars($event['location_name'] ?? $event['location'] ?? 'ເບິ່ງແຜນທີ່') ?>
+                                    <?= htmlspecialchars($loc_name) ?>
                                 </a>
                             <?php else: ?>
-                                <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($event['location_name'] ?? $event['location'] ?? '') ?>" 
+                                <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($loc_name) ?>" 
                                    target="_blank" 
                                    style="color: #2563EB; text-decoration: underline;" 
                                    title="ຄລິກເພື່ອເບິ່ງແຜນທີ່ Google Maps">
-                                    <?= htmlspecialchars($event['location_name'] ?? $event['location'] ?? 'ເບິ່ງແຜນທີ່') ?>
+                                    <?= htmlspecialchars($loc_name) ?>
                                 </a>
                             <?php endif; ?>
                         </span>
@@ -453,7 +537,7 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
                     <i class="fa-regular fa-clock"></i>
                     <div class="info-text">
                         <small>ເວລາເປີດ-ປິດ</small>
-                        <span><?= htmlspecialchars(!empty($event['time']) ? $event['time'] : '') ?></span>
+                        <span><?= htmlspecialchars($event['time'] ?? 'ບໍ່ມີຂໍ້ມູນ') ?></span>
                     </div>
                 </div>
             </div>
@@ -468,9 +552,9 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
                     <div class="org-avatar"><i class="fa-regular fa-user"></i></div>
                     <div class="org-details">
                         <h4>
-                            <?= htmlspecialchars($event['company_name'] ?: $event['organizer_name']) ?>
-                            <?php if (!empty($event['is_verified']) && ($event['is_verified'] == 1 || $event['is_verified'] === 'verified')): ?>
-                                <i class="fa-solid fa-circle-check verified-badge" title="ບັນຊີນີ້ได้รับการຢືນຢັນແລ້ວ"></i>
+                            <?= htmlspecialchars(!empty($event['company_name']) ? $event['company_name'] : ($event['organizer_name'] ?? 'ຜູ້ຈັດງານ')) ?>
+                            <?php if (isset($event['is_verified']) && ($event['is_verified'] == 1 || $event['is_verified'] === 'verified')): ?>
+                                <i class="fa-solid fa-circle-check verified-badge" title="ບັນຊີນີ້ໄດ້ຮັບການຢືນຢັນແລ້ວ"></i>
                             <?php endif; ?>
                         </h4>
                         <p>ຜູ້ຈັດງານອົງກອນ / ບຸກຄົນ</p>
@@ -491,15 +575,29 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
     <!-- Stalls Section -->
     <div class="stalls-section">
         <div class="stalls-header">
-            <h2><i class="fa-solid fa-store" style="color: var(--primary);"></i> ຮ້ານຄ້າພາຍໃນງານ (<?= count($stalls) ?> ຮ້ານ)</h2>
+            <h2><i class="fa-solid fa-store" style="color: var(--primary);"></i> ຮ້ານຄ້າພາຍໃນງານ (<?= $total_stalls_count ?> ຮ້ານ)</h2>
         </div>
 
         <?php if (!empty($stalls)): ?>
             <div class="stalls-grid">
                 <?php foreach ($stalls as $stall): ?>
                     <div class="stall-card">
-                        <?php if (!empty($stall['image'])): ?>
-                            <img src="uploads/<?= htmlspecialchars($stall['image']) ?>" class="stall-img" alt="<?= htmlspecialchars($stall['stall_name']) ?>">
+                        <?php 
+                        // ກວດສອບ URL Google ຫຼື ໄຟລ໌ໃນ Uploads ຂອງ Stalls
+                        $stall_img_src = $stall['image'] ?? $stall['stall_img'] ?? ''; 
+                        $final_stall_img = '';
+
+                        if (!empty($stall_img_src)) {
+                            if (filter_var($stall_img_src, FILTER_VALIDATE_URL) || str_starts_with($stall_img_src, 'http://') || str_starts_with($stall_img_src, 'https://')) {
+                                $final_stall_img = $stall_img_src;
+                            } else {
+                                $final_stall_img = 'uploads/' . $stall_img_src;
+                            }
+                        }
+                        ?>
+
+                        <?php if (!empty($final_stall_img)): ?>
+                            <img src="<?= htmlspecialchars($final_stall_img) ?>" class="stall-img" alt="<?= htmlspecialchars($stall['stall_name'] ?? '') ?>" referrerpolicy="no-referrer">
                         <?php else: ?>
                             <div class="stall-img" style="display: flex; align-items: center; justify-content: center; color: #CBD5E1;">
                                 <i class="fa-solid fa-store" style="font-size: 40px;"></i>
@@ -510,7 +608,7 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
                             <?php if (!empty($stall['stall_number'])): ?>
                                 <span class="stall-number">ລັອກ: <?= htmlspecialchars($stall['stall_number']) ?></span>
                             <?php endif; ?>
-                            <h3 class="stall-title"><?= htmlspecialchars($stall['stall_name']) ?></h3>
+                            <h3 class="stall-title"><?= htmlspecialchars($stall['stall_name'] ?? '') ?></h3>
                             
                             <?php if (!empty($stall['categories'])): ?>
                                 <div class="stall-cat"><i class="fa-solid fa-tag"></i> <?= htmlspecialchars($stall['categories']) ?></div>
@@ -530,6 +628,32 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
                     </div>
                 <?php endforeach; ?>
             </div>
+
+            <!-- Pagination Controls -->
+            <?php if ($total_pages > 1): ?>
+                <div class="pagination">
+                    <!-- ປຸ່ມ Back -->
+                    <a href="?id=<?= $event_id ?>&page=<?= $current_page - 1 ?>" 
+                       class="page-link <?= ($current_page <= 1) ? 'disabled' : '' ?>">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </a>
+
+                    <!-- ເລກໜ້າ 1, 2, 3... -->
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                        <a href="?id=<?= $event_id ?>&page=<?= $i ?>" 
+                           class="page-link <?= ($i === $current_page) ? 'active' : '' ?>">
+                            <?= $i ?>
+                        </a>
+                    <?php endfor; ?>
+
+                    <!-- ປຸ່ມ Next -->
+                    <a href="?id=<?= $event_id ?>&page=<?= $current_page + 1 ?>" 
+                       class="page-link <?= ($current_page >= $total_pages) ? 'disabled' : '' ?>">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                </div>
+            <?php endif; ?>
+
         <?php else: ?>
             <div class="empty-stalls">
                 <i class="fa-solid fa-store-slash"></i>
@@ -592,14 +716,14 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
                     <div class="review-item">
                         <div class="review-user">
                             <div>
-                                <span class="review-username"><?= htmlspecialchars($rev['username'] ?: 'ຜູ້ໃຊ້ທົ່ວໄປ') ?></span>
+                                <span class="review-username"><?= htmlspecialchars($rev['username'] ?? 'ຜູ້ໃຊ້ທົ່ວໄປ') ?></span>
                                 <div class="stars-outer" style="display: inline-block; margin-left: 8px; font-size: 14px;">
                                     <?php for ($i = 1; $i <= 5; $i++): ?>
-                                        <i class="fa-solid fa-star <?= $i <= $rev['rating'] ? 'filled' : '' ?>"></i>
+                                        <i class="fa-solid fa-star <?= $i <= (int)($rev['rating'] ?? 0) ? 'filled' : '' ?>"></i>
                                     <?php endfor; ?>
                                 </div>
                             </div>
-                            <span class="review-date"><?= date('d/m/Y H:i', strtotime($rev['create_at'])) ?></span>
+                            <span class="review-date"><?= !empty($rev['create_at']) ? date('d/m/Y H:i', strtotime($rev['create_at'])) : '' ?></span>
                         </div>
                         <?php if (!empty($rev['comment'])): ?>
                             <p class="review-comment"><?= nl2br(htmlspecialchars($rev['comment'])) ?></p>
@@ -613,5 +737,6 @@ $total_reviews = $rating_data['total_reviews'] ?? 0;
     </div>
 </div>
 
+<script src="assets/site-i18n.js"></script>
 </body>
 </html>

@@ -24,9 +24,14 @@ $total_organizers = $pdo->query("SELECT COUNT(*) FROM organizers")->fetchColumn(
 $total_events     = $pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
 
 // SELECT ດຶງ e.end_date ມາພ້ອມ
+$perPage = 10;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$event_count = (int)$pdo->query('SELECT COUNT(*) FROM events')->fetchColumn();
+$page = min($page, max(1, (int)ceil($event_count / $perPage)));
+$offset = ($page - 1) * $perPage;
 $events = $pdo->query("SELECT e.event_id, e.title, e.start_date, e.end_date, e.location, e.status, o.organizer_name, o.company_name
-                        FROM events e JOIN organizers o ON o.organizer_id = e.organizer_id
-                        ORDER BY (e.status='pending') DESC, e.event_id DESC")->fetchAll();
+                        FROM events e LEFT JOIN organizers o ON o.organizer_id = e.organizer_id
+                        ORDER BY (e.status='pending') DESC, e.event_id DESC LIMIT $perPage OFFSET $offset")->fetchAll();
 
 $badge = ['pending' => 'badge-pending', 'approved' => 'badge-approved', 'rejected' => 'badge-rejected'];
 $label = ['pending' => 'ລໍຖ້າ', 'approved' => 'ອະນຸມັດແລ້ວ', 'rejected' => 'ປະຕິເສດ'];
@@ -40,7 +45,7 @@ $label = ['pending' => 'ລໍຖ້າ', 'approved' => 'ອະນຸມັດ�
     <title>ອະນຸມັດງານຕະຫຼາດນັດ | Admin - LAOeventMarket</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="assets/admin.css">
+    <link rel="stylesheet" href="assets/admin.css?v=20261002-pagination">
     
     <style>
         /* CSS ສຳລັບ Modal Popup */
@@ -192,6 +197,7 @@ $label = ['pending' => 'ລໍຖ້າ', 'approved' => 'ອະນຸມັດ�
                             </tr>
                         <?php endforeach; ?>
                     </table>
+                    <?php require_once __DIR__ . '/admin_pagination.php'; admin_pagination($event_count, $perPage, $page); ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -235,6 +241,7 @@ $label = ['pending' => 'ລໍຖ້າ', 'approved' => 'ອະນຸມັດ�
         document.getElementById('detailModal').classList.remove('active');
     }
     </script>
-</body>
+<script src="assets/site-i18n.js?v=20260930-admin-locale"></script>
+    </body>
 
 </html>

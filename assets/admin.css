@@ -1,3 +1,4 @@
+@import url("site-logo.css");
 /* ============================================
    LAOeventMarket - Admin Module Stylesheet
    ============================================ */
@@ -12,6 +13,7 @@ a { text-decoration:none; color:inherit; }
 }
 .topbar .brand { font-size:18px; font-weight:700; color:#10B981; }
 .topbar .brand span { color:#111827; }
+.topbar .brand { display:flex; align-items:center; gap:8px; }
 .status-dot { width:8px; height:8px; background:#10B981; border-radius:50%; display:inline-block; margin-right:4px; }
 .topbar .top-actions { display:flex; align-items:center; gap:14px; font-size:12px; color:#64748B; }
 .topbar .top-actions a.btn-logout {
@@ -32,18 +34,28 @@ a { text-decoration:none; color:inherit; }
 .side-item:hover { background:#1F2937; }
 .side-item.active { background:#059669; color:#fff; }
 
-.content { flex:1; padding:20px; min-width:0; }
+.content { flex:1; padding:20px; min-width:0; background:#F1F5F9; }
 .page-title { font-size:16px; font-weight:600; color:#111827; margin:0; }
 
 /* ---------- Stat cards ---------- */
 .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
 .stat-card { background:#fff; border-radius:10px; padding:14px; border:1px solid #E2E8F0; }
+.stat-card--gray { background:#F1F5F9; border-color:#CBD5E1; }
+.stat-card--red { background:#FEF2F2; border-color:#FECACA; }
+.stat-card--green { background:#ECFDF5; border-color:#A7F3D0; }
+.stat-card--white { background:#fff; border-color:#E2E8F0; }
 .stat-card p.label { font-size:12px; color:#64748B; margin:0; }
 .stat-card p.value { font-size:20px; font-weight:600; margin:4px 0 0; color:#111827; }
 
 /* ---------- Panel / table ---------- */
 .panel { background:#fff; border-radius:10px; border:1px solid #E2E8F0; padding:16px; margin-bottom:18px; }
 .panel h2 { font-size:14px; font-weight:600; color:#111827; margin-bottom:14px; }
+.field-label { display:block; font-size:12px; font-weight:500; color:#334155; margin:10px 0 5px; }
+.f-input { display:block; width:100%; min-height:38px; border:1px solid #D7E0EC; border-radius:8px; background:#fff; padding:8px 10px; margin:0 0 12px; color:#111827; font-size:13px; }
+.f-input:focus { outline:none; border-color:#10B981; box-shadow:0 0 0 3px rgba(16,185,129,.12); }
+.admin-pagination { display:flex; justify-content:center; flex-wrap:wrap; gap:6px; margin:18px 0 4px; }
+.admin-pagination a { min-width:34px; padding:7px 10px; text-align:center; border:1px solid #E2E8F0; border-radius:7px; color:#334155; background:#fff; font-size:12px; }
+.admin-pagination a:hover,.admin-pagination a.current { background:#059669; border-color:#059669; color:#fff; }
 table.data-table { width:100%; border-collapse:collapse; font-size:13px; }
 table.data-table th { text-align:left; font-size:11px; color:#64748B; padding:8px 10px; border-bottom:1px solid #E2E8F0; }
 table.data-table td { font-size:12px; color:#111827; padding:9px 10px; border-bottom:1px solid #F1F5F9; vertical-align:middle; }
