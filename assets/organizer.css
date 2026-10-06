@@ -115,6 +115,9 @@ table.data-table tr:last-child td { border-bottom:none; }
 .alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; }
 .alert-success { background:#E1F5EE; color:#0F6E56; }
 .alert-error { background:#FEE2E2; color:#B91C1C; }
+.org-pagination { display:flex; justify-content:center; flex-wrap:wrap; gap:6px; margin:18px 0 4px; }
+.org-pagination a { min-width:34px; padding:7px 10px; text-align:center; border:1px solid #E2E8F0; border-radius:7px; color:#334155; background:#fff; font-size:12px; }
+.org-pagination a:hover,.org-pagination a.current { background:#059669; border-color:#059669; color:#fff; }
 
 .stars { color:#F59E0B; font-size:13px; letter-spacing:1px; }
 

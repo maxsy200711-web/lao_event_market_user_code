@@ -62,7 +62,7 @@ if (!$event) {
 // -------------------------------------------------------------
 // 3. ດຶງຂໍ້ມູນຮ້ານຄ້າ (Stalls) + Pagination (9 ຮ້ານຕໍ່ໜ້າ)
 // -------------------------------------------------------------
-$items_per_page = 9; // ກຳນົດ 9 ຮ້ານຕໍ່ 1 ໜ້າ
+$items_per_page = 6; // ຫົກຮ້ານຕໍ່ໜ້າ ເພື່ອສະແດງເປັນໜຶ່ງແຖວ
 $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($current_page < 1) $current_page = 1;
 
@@ -181,7 +181,7 @@ $total_reviews = (int)($rating_data['total_reviews'] ?? 0);
         .btn-back:hover { background: #F1F5F9; }
 
         /* Container Layout */
-        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+        .container { max-width: 1600px; margin: 30px auto; padding: 0 20px; }
 
         /* Event Banner Card */
         .event-card {
@@ -265,9 +265,13 @@ $total_reviews = (int)($rating_data['total_reviews'] ?? 0);
 
         .stalls-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 20px;
         }
+        @media (max-width: 1200px) { .stalls-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        @media (max-width: 900px) { .stalls-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media (max-width: 640px) { .stalls-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+        @media (max-width: 420px) { .stalls-grid { grid-template-columns: 1fr; } }
         .stall-card {
             background: #ffffff;
             border: 1px solid var(--border);

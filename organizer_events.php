@@ -7,13 +7,23 @@ function img_path(?string $p): string {
     return preg_match('/^https?:\/\//i', $p) ? $p : 'uploads/' . ltrim($p, '/');
 }
 
+$perPage = 10;
+$totalRowsStmt = $pdo->prepare('SELECT COUNT(*) FROM events WHERE organizer_id = ?');
+$totalRowsStmt->execute([$organizer_id]);
+$totalRows = (int)$totalRowsStmt->fetchColumn();
+$page = max(1, (int)($_GET['page'] ?? 1));
+$page = min($page, max(1, (int)ceil($totalRows / $perPage)));
+$offset = ($page - 1) * $perPage;
 $stmt = $pdo->prepare("SELECT e.*, p.province_name, c.category_name
                         FROM events e
                         JOIN provinces p ON p.province_id = e.province_id
                         JOIN categories c ON c.category_id = e.category_id
                         WHERE e.organizer_id = ?
-                        ORDER BY e.event_id DESC");
-$stmt->execute([$organizer_id]);
+                        ORDER BY e.event_id DESC LIMIT ? OFFSET ?");
+$stmt->bindValue(1, $organizer_id, PDO::PARAM_INT);
+$stmt->bindValue(2, $perPage, PDO::PARAM_INT);
+$stmt->bindValue(3, $offset, PDO::PARAM_INT);
+$stmt->execute();
 $events = $stmt->fetchAll();
 
 $badge = ['pending' => 'badge-pending', 'approved' => 'badge-approved', 'rejected' => 'badge-rejected'];
@@ -72,6 +82,7 @@ $label = ['pending' => 'ລໍຖ້າອະນຸມັດ', 'approved' => '�
                 <?php endforeach; ?>
             </table>
             <?php endif; ?>
+            <?php require_once __DIR__ . '/organizer_pagination.php'; organizer_pagination($totalRows, $perPage, $page); ?>
         </div>
     </div>
 </div>

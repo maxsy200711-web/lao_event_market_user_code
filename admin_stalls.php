@@ -5,6 +5,13 @@ if (empty($_SESSION['admin_csrf'])) $_SESSION['admin_csrf'] = bin2hex(random_byt
 $csrf = $_SESSION['admin_csrf'];
 $error = '';
 
+function admin_stall_image_url(?string $image): string {
+    $image = trim((string)$image);
+    if ($image === '') return '';
+    if (preg_match('~^https?://~i', $image)) return $image;
+    return str_starts_with(ltrim($image, '/'), 'uploads/') ? ltrim($image, '/') : 'uploads/' . ltrim($image, '/');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals($csrf, (string)($_POST['csrf'] ?? ''))) {
         $error = 'Security token expired. Refresh and try again.';
@@ -49,14 +56,14 @@ if ($editId) {
 }
 $events = $pdo->query('SELECT event_id, title FROM events ORDER BY event_id DESC')->fetchAll();
 $categories = $pdo->query('SELECT category_name, category_name_en FROM categories ORDER BY category_name')->fetchAll();
-$perPage = 10;
+$perPage = 7;
 $page = max(1, (int)($_GET['page'] ?? 1));
 $totalRows = (int)$pdo->query('SELECT COUNT(*) FROM event_stalls')->fetchColumn();
 $page = min($page, max(1, (int)ceil($totalRows / $perPage)));
 $offset = ($page - 1) * $perPage;
 $stalls = $pdo->query("SELECT s.*, e.title AS event_title FROM event_stalls s LEFT JOIN events e ON e.event_id=s.event_id ORDER BY s.stall_id DESC LIMIT $perPage OFFSET $offset")->fetchAll();
 ?>
-<!doctype html><html lang="lo"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manage Event Stalls | Admin</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"><link rel="stylesheet" href="assets/admin.css?v=20261002-pagination"></head><body>
+<!doctype html><html lang="lo"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manage Event Stalls | Admin</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"><link rel="stylesheet" href="assets/admin.css?v=20261006-stall-images"></head><body>
 <?php include __DIR__ . '/admin_topbar.php'; ?><div class="app-shell"><?php $active='stalls'; include __DIR__ . '/admin_sidebar.php'; ?><main class="content">
 <p class="page-title" style="margin-bottom:16px">Manage Event Stalls</p>
 <?php if($error): ?><div class="panel" style="color:#B91C1C"><?= htmlspecialchars($error) ?></div><?php elseif(isset($_GET['saved'])): ?><div class="panel" style="color:#047857">Changes saved.</div><?php endif; ?>
@@ -69,5 +76,19 @@ $stalls = $pdo->query("SELECT s.*, e.title AS event_title FROM event_stalls s LE
 <label class="field-label">Contact information</label><input class="f-input" name="contact_info" maxlength="100" value="<?= htmlspecialchars($editing['contact_info']??'') ?>">
 <label class="field-label">Image path / URL</label><input class="f-input" name="image" maxlength="255" value="<?= htmlspecialchars($editing['image']??'') ?>">
 <button class="btn" style="background:#10B981;color:#fff" type="submit">Save Stall</button><?php if($editing): ?> <a class="btn btn-outline" href="admin_stalls.php">Cancel</a><?php endif; ?></form></section>
-<section class="panel"><h2>All Stalls</h2><?php if(!$stalls): ?><div class="empty-state">No stalls found.</div><?php else: ?><table class="data-table"><thead><tr><th>ID</th><th>Event</th><th>Stall</th><th>Number</th><th>Category</th><th>Contact</th><th>Actions</th></tr></thead><tbody><?php foreach($stalls as $s): ?><tr><td><?= (int)$s['stall_id'] ?></td><td><?= htmlspecialchars($s['event_title']??'—') ?></td><td><?= htmlspecialchars($s['stall_name']) ?></td><td><?= htmlspecialchars($s['stall_number']??'') ?></td><td><?= htmlspecialchars($s['categories']??'') ?></td><td><?= htmlspecialchars($s['contact_info']??'') ?></td><td><a class="btn btn-outline" href="?edit=<?= (int)$s['stall_id'] ?>">Edit</a> <form method="post" style="display:inline" onsubmit="return confirm('Delete this stall?')"><input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="stall_id" value="<?= (int)$s['stall_id'] ?>"><button class="btn btn-danger">Delete</button></form></td></tr><?php endforeach; ?></tbody></table><?php endif; ?></section>
+<section class="panel"><h2>All Stalls</h2>
+<?php if (!$stalls): ?><div class="empty-state">No stalls found.</div><?php else: ?>
+<table class="data-table"><thead><tr><th>ID</th><th>Image</th><th>Event</th><th>Stall</th><th>Number</th><th>Category</th><th>Contact</th><th>Actions</th></tr></thead><tbody>
+<?php foreach ($stalls as $s): $imageUrl = admin_stall_image_url($s['image'] ?? ''); ?>
+<tr>
+    <td><?= (int)$s['stall_id'] ?></td>
+    <td><?php if ($imageUrl !== ''): ?><img class="stall-preview" src="<?= htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($s['stall_name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><span class="stall-preview stall-preview-empty"><i class="ti ti-photo"></i></span><?php endif; ?></td>
+    <td><?= htmlspecialchars($s['event_title'] ?? '—') ?></td>
+    <td><?= htmlspecialchars($s['stall_name']) ?></td>
+    <td><?= htmlspecialchars($s['stall_number'] ?? '') ?></td>
+    <td><?= htmlspecialchars($s['categories'] ?? '') ?></td>
+    <td><?= htmlspecialchars($s['contact_info'] ?? '') ?></td>
+    <td><a class="btn btn-outline" href="?edit=<?= (int)$s['stall_id'] ?>">Edit</a> <form method="post" style="display:inline" onsubmit="return confirm('Delete this stall?')"><input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="stall_id" value="<?= (int)$s['stall_id'] ?>"><button class="btn btn-danger">Delete</button></form></td>
+</tr>
+<?php endforeach; ?></tbody></table><?php endif; ?></section>
 <?php require_once __DIR__ . '/admin_pagination.php'; admin_pagination($totalRows, $perPage, $page); ?></main></div></body></html>

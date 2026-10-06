@@ -3,6 +3,13 @@ require_once __DIR__ . "/config.php";
 require_once __DIR__ . "/auth_organizer.php";
 
 // ---- ສະຫຼຸບຄະແນນ ແຍກຕາມແຕ່ລະງານ ----
+$perPage = 10;
+$summaryTotalStmt = $pdo->prepare('SELECT COUNT(*) FROM events WHERE organizer_id = ?');
+$summaryTotalStmt->execute([$organizer_id]);
+$summaryTotal = (int)$summaryTotalStmt->fetchColumn();
+$summaryPage = max(1, (int)($_GET['summary_page'] ?? 1));
+$summaryPage = min($summaryPage, max(1, (int)ceil($summaryTotal / $perPage)));
+$summaryOffset = ($summaryPage - 1) * $perPage;
 $stmt = $pdo->prepare("SELECT e.event_id, e.title,
                                COUNT(r.review_id) AS review_count,
                                ROUND(AVG(r.rating),1) AS avg_rating
@@ -10,18 +17,30 @@ $stmt = $pdo->prepare("SELECT e.event_id, e.title,
                         LEFT JOIN reviews r ON r.event_id = e.event_id
                         WHERE e.organizer_id = ?
                         GROUP BY e.event_id, e.title
-                        ORDER BY e.event_id DESC");
-$stmt->execute([$organizer_id]);
+                        ORDER BY e.event_id DESC LIMIT ? OFFSET ?");
+$stmt->bindValue(1, $organizer_id, PDO::PARAM_INT);
+$stmt->bindValue(2, $perPage, PDO::PARAM_INT);
+$stmt->bindValue(3, $summaryOffset, PDO::PARAM_INT);
+$stmt->execute();
 $summary = $stmt->fetchAll();
 
 // ---- ລິວິວລ້າສຸດ ພ້ອມຊື່ຜູ້ຂຽນ ແລະ ຊື່ງານ ----
+$reviewTotalStmt = $pdo->prepare('SELECT COUNT(*) FROM reviews r JOIN events e ON e.event_id = r.event_id WHERE e.organizer_id = ?');
+$reviewTotalStmt->execute([$organizer_id]);
+$reviewTotal = (int)$reviewTotalStmt->fetchColumn();
+$reviewsPage = max(1, (int)($_GET['reviews_page'] ?? 1));
+$reviewsPage = min($reviewsPage, max(1, (int)ceil($reviewTotal / $perPage)));
+$reviewsOffset = ($reviewsPage - 1) * $perPage;
 $stmt = $pdo->prepare("SELECT r.rating, r.comment, r.create_at, u.full_name, e.title
                         FROM reviews r
                         JOIN events e ON e.event_id = r.event_id
                         JOIN users u ON u.user_id = r.user_id
                         WHERE e.organizer_id = ?
-                        ORDER BY r.review_id DESC LIMIT 20");
-$stmt->execute([$organizer_id]);
+                        ORDER BY r.review_id DESC LIMIT ? OFFSET ?");
+$stmt->bindValue(1, $organizer_id, PDO::PARAM_INT);
+$stmt->bindValue(2, $perPage, PDO::PARAM_INT);
+$stmt->bindValue(3, $reviewsOffset, PDO::PARAM_INT);
+$stmt->execute();
 $reviews = $stmt->fetchAll();
 
 function stars(?float $n): string {
@@ -62,6 +81,7 @@ function stars(?float $n): string {
                 <?php endforeach; ?>
             </table>
             <?php endif; ?>
+            <?php require_once __DIR__ . '/organizer_pagination.php'; organizer_pagination($summaryTotal, $perPage, $summaryPage, 'summary_page'); ?>
         </div>
 
         <div class="panel">
@@ -82,6 +102,7 @@ function stars(?float $n): string {
                 <?php endforeach; ?>
             </table>
             <?php endif; ?>
+            <?php require_once __DIR__ . '/organizer_pagination.php'; organizer_pagination($reviewTotal, $perPage, $reviewsPage, 'reviews_page'); ?>
         </div>
     </div>
 </div>

@@ -80,6 +80,8 @@ table.data-table tr:last-child td { border-bottom:none; }
 .btn-danger:hover { background:#FECACA; }
 
 .empty-state { text-align:center; padding:36px 10px; color:#94A3B8; font-size:13px; }
+.stall-preview { width:48px; height:48px; display:block; object-fit:cover; border-radius:7px; background:#F1F5F9; }
+.stall-preview-empty { display:flex; align-items:center; justify-content:center; color:#94A3B8; }
 .empty-state i { font-size:26px; display:block; margin-bottom:8px; }
 .stars { color:#F59E0B; }
 
